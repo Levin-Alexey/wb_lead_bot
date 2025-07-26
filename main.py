@@ -42,6 +42,26 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 """
     await update.message.reply_text(help_text)
 
+async def services_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Отправляет описание услуг при команде /services"""
+    services_text = """Описание услуги: 
+
+Мы создали целое сообщество, подписочный проект, который позволяет людям обучиться и работать в сфере маркетплейсов и товарного бизнеса 
+
+За подписку в 1490₽
+Человек получает:
+
+- Уроки по тому, как стать менеджером маркетплейсов
+- Как работать с Китаем
+- Как делать инфографику
+- Как открыть свой бизнес на WB
+- Помощь кураторов
+- Эфиры и новости
+- Полезные гайды
+- Поддержку от единомышленников"""
+    
+    await update.message.reply_text(services_text)
+
 async def send_message_series(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Отправляет серию сообщений"""
     messages = [
@@ -107,6 +127,7 @@ def main() -> None:
     
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("services", services_command))
     application.add_handler(CommandHandler("series", send_message_series))
     application.add_handler(CallbackQueryHandler(button_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
