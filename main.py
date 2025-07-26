@@ -127,7 +127,7 @@ def main() -> None:
     
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("services", services_command))
+    application.add_handler(CommandHandler("service", services_command))
     application.add_handler(CommandHandler("series", send_message_series))
     application.add_handler(CallbackQueryHandler(button_handler))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
