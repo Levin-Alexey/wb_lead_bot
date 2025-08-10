@@ -83,7 +83,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         keyboard = [[InlineKeyboardButton("ДАЛЕЕ", callback_data='next_step')]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        oferta_text = """Нажимая "Далее" вы соглашаетесь с условиями публичной [ОФФЕРТЫ](https://docs.yandex.ru/docs/view?url=ya-disk-public%3A%2F%2FUNGTzXmSZl%2F%2FJZdZtdPe0Wk057X7LR5eVQGXnTj4E63Yp9JxglBwZZ2cghPM8X5Nq%2FJ6bpmRyOJonT3VoXnDag%3D%3D&name=%D0%9E%D1%84%D1%84%D0%B5%D1%80%D1%82%D0%B0%20MarketSkills.pdf&nosw=1) 📄"""
+        oferta_text = """Нажимая "Далее" вы соглашаетесь с условиями публичной [ОФФЕРТЫ](https://docs.yandex.ru/docs/view?url=ya-disk-public%3A%2F%2FZkx7HkIuQDpkVUiXOfvHBOO%2FQPNC9%2Fxb%2BiOzOS22ub%2FpW7TeWe4Yk3b3NEtMKypTq%2FJ6bpmRyOJonT3VoXnDag%3D%3D&name=%D0%9E%D1%84%D1%84%D0%B5%D1%80%D1%82%D0%B0%20MarketSkills%20(2).docx&nosw=1) 📄"""
         
         await query.message.reply_text(
             text=oferta_text,
