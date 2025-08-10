@@ -3,6 +3,8 @@ import logging
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
+from telegram.constants import ParseMode
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 load_dotenv()
 
@@ -78,18 +80,28 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     """Обработчик нажатий на inline кнопки"""
     query = update.callback_query
     await query.answer()
-    
+
     if query.data == 'learn_more':
-        keyboard = [[InlineKeyboardButton("ДАЛЕЕ", callback_data='next_step')]]
+        oferta_url = (
+            "https://docs.yandex.ru/docs/view?url=ya-disk-public%3A%2F%2FZkx7HkIuQDpkVUiXOfvHBOO%2FQPNC9%2Fxb%2BiOzOS22ub%2FpW7TeWe4Yk3b3NEtMKypTq%2FJ6bpmRyOJonT3VoXnDag%3D%3D"
+            "&name=%D0%9E%D1%84%D1%84%D0%B5%D1%80%D1%82%D0%B0%20MarketSkills%20(2).docx&nosw=1")
+
+        keyboard = [
+            [InlineKeyboardButton("Посмотреть оферту 📄", url=oferta_url)],
+            [InlineKeyboardButton("ДАЛЕЕ", callback_data='next_step')],
+        ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        oferta_text = """Нажимая "Далее" вы соглашаетесь с условиями публичной [ОФФЕРТЫ](https://docs.yandex.ru/docs/view?url=ya-disk-public%3A%2F%2FZkx7HkIuQDpkVUiXOfvHBOO%2FQPNC9%2Fxb%2BiOzOS22ub%2FpW7TeWe4Yk3b3NEtMKypTq%2FJ6bpmRyOJonT3VoXnDag%3D%3D&name=%D0%9E%D1%84%D1%84%D0%B5%D1%80%D1%82%D0%B0%20MarketSkills%20(2).docx&nosw=1) 📄"""
-        
+
+        oferta_text = (
+            'Нажимая "Далее" вы соглашаетесь с условиями публичной '
+            f'<a href="{oferta_url}">ОФФЕРТЫ</a> 📄'
+        )
+
         await query.message.reply_text(
             text=oferta_text,
             reply_markup=reply_markup,
-            parse_mode='Markdown',
-            disable_web_page_preview=True
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=True,
         )
     
     elif query.data == 'next_step':
