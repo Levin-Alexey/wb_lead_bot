@@ -49,7 +49,11 @@ class Payment(Base):
     amount_rub: Mapped[float] = mapped_column(Numeric(12, 2))
     provider: Mapped[str] = mapped_column(String, default="yookassa")
     provider_payment_id: Mapped[str | None] = mapped_column(String, unique=False)
-    status: Mapped[PaymentStatus] = mapped_column(Enum(PaymentStatus), default=PaymentStatus.pending)
+    status: Mapped[PaymentStatus] = mapped_column(
+        PGEnum(PaymentStatus, name="payment_status", create_type=False),
+        default=PaymentStatus.pending,
+        nullable=False,
+    )
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
     paid_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
 
@@ -58,11 +62,6 @@ class Payment(Base):
 
     user: Mapped["User"] = relationship(back_populates="payments")
     events: Mapped[list["PaymentEvent"]] = relationship(back_populates="payment")
-    status: Mapped[PaymentStatus] = mapped_column(
-        PGEnum(PaymentStatus, name="payment_status", create_type=False),
-        default=PaymentStatus.pending,
-        nullable=False,
-    )
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
@@ -72,15 +71,14 @@ class Subscription(Base):
     tariff_code: Mapped[str] = mapped_column(ForeignKey("tariffs.code"))
     start_at: Mapped[datetime]
     end_at: Mapped[datetime]
-    status: Mapped[SubscriptionStatus] = mapped_column(Enum(SubscriptionStatus), default=SubscriptionStatus.active)
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
-
-    user: Mapped["User"] = relationship(back_populates="subscriptions")
     status: Mapped[SubscriptionStatus] = mapped_column(
         PGEnum(SubscriptionStatus, name="subscription_status", create_type=False),
         default=SubscriptionStatus.active,
         nullable=False,
     )
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
+
+    user: Mapped["User"] = relationship(back_populates="subscriptions")
 
 class PaymentEvent(Base):
     __tablename__ = "payment_events"

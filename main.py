@@ -142,7 +142,9 @@ def yk_create_payment_and_get_url(chat_id: int, payment_db_id: int, tariff_code:
                 "description": description,
                 "quantity": "1.00",
                 "amount": {"value": amount_rub, "currency": "RUB"},
-                "vat_code": 1
+                "vat_code": 1,
+                "payment_subject": "service",
+                "payment_mode": "full_payment"
             }]
         }
     }, idempotence_key)
