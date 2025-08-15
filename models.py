@@ -20,6 +20,7 @@ class SubscriptionStatus(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     username: Mapped[str | None] = mapped_column(Text)
@@ -31,30 +32,35 @@ class User(Base):
 
 class Tariff(Base):
     __tablename__ = "tariffs"
+
     code: Mapped[str] = mapped_column(String, primary_key=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     duration_months: Mapped[int]
-    price_rub: Mapped[float] = mapped_column(Numeric(12,2))
+    price_rub: Mapped[float] = mapped_column(Numeric(12, 2))
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
 
 class Payment(Base):
     __tablename__ = "payments"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     tariff_code: Mapped[str] = mapped_column(ForeignKey("tariffs.code"))
-    amount_rub: Mapped[float] = mapped_column(Numeric(12,2))
+    amount_rub: Mapped[float] = mapped_column(Numeric(12, 2))
     provider: Mapped[str] = mapped_column(String, default="yookassa")
     provider_payment_id: Mapped[str | None] = mapped_column(String, unique=False)
     status: Mapped[PaymentStatus] = mapped_column(Enum(PaymentStatus), default=PaymentStatus.pending)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
     paid_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
-    metadata: Mapped[dict | None] = mapped_column(JSON)
+
+    # ВАЖНО: атрибут назван НЕ "metadata". Колонка в БД всё ещё называется "metadata".
+    provider_metadata: Mapped[dict | None] = mapped_column("metadata", JSON)
 
     user: Mapped["User"] = relationship(back_populates="payments")
     events: Mapped[list["PaymentEvent"]] = relationship(back_populates="payment")
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     tariff_code: Mapped[str] = mapped_column(ForeignKey("tariffs.code"))
@@ -67,6 +73,7 @@ class Subscription(Base):
 
 class PaymentEvent(Base):
     __tablename__ = "payment_events"
+
     id: Mapped[int] = mapped_column(primary_key=True)
     payments_id: Mapped[int] = mapped_column(ForeignKey("payments.id", ondelete="CASCADE"))
     event: Mapped[str] = mapped_column(Text)

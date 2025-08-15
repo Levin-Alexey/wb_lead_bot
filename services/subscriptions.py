@@ -1,7 +1,7 @@
 # services/subscriptions.py
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import User, Tariff, Payment, PaymentStatus, Subscription, SubscriptionStatus
 
@@ -23,7 +23,7 @@ async def create_pending_payment(session: AsyncSession, user_id: int, tariff_cod
         tariff_code=tariff.code,
         amount_rub=tariff.price_rub,
         status=PaymentStatus.pending,
-        metadata={}
+        provider_metadata={},  # <-- было metadata={}
     )
     session.add(p)
     await session.flush()  # получим p.id
@@ -36,7 +36,7 @@ async def mark_payment_succeeded(session: AsyncSession, payment_db_id: int, prov
     p.status = PaymentStatus.succeeded
     p.paid_at = datetime.utcnow()
     p.provider_payment_id = provider_payment_id
-    p.metadata = payload
+    p.provider_metadata = payload  # <-- было p.metadata = payload
     await session.flush()
     return p
 
