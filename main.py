@@ -45,6 +45,16 @@ Configuration.secret_key = YOOKASSA_SECRET_KEY
 # ================== ХЕНДЛЕРЫ БОТА ==================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Отправляет приветственное сообщение при команде /start"""
+    # Автоматически сохраняем или обновляем данные пользователя
+    async with get_session() as session:
+        user = await get_or_create_user(
+            session,
+            tg_id=update.message.from_user.id,
+            username=update.message.from_user.username,
+            first_name=update.message.from_user.first_name
+        )
+        await session.commit()
+
     keyboard = [[InlineKeyboardButton("Узнать подробнее", callback_data='learn_more')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
