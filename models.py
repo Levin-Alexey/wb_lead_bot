@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import BigInteger, String, Text, Numeric, ForeignKey, Enum, JSON, TIMESTAMP
 import enum
+from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 
 class Base(DeclarativeBase):
     pass
@@ -57,6 +58,11 @@ class Payment(Base):
 
     user: Mapped["User"] = relationship(back_populates="payments")
     events: Mapped[list["PaymentEvent"]] = relationship(back_populates="payment")
+    status: Mapped[PaymentStatus] = mapped_column(
+        PGEnum(PaymentStatus, name="payment_status", create_type=False),
+        default=PaymentStatus.pending,
+        nullable=False,
+    )
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
@@ -70,6 +76,11 @@ class Subscription(Base):
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
 
     user: Mapped["User"] = relationship(back_populates="subscriptions")
+    status: Mapped[SubscriptionStatus] = mapped_column(
+        PGEnum(SubscriptionStatus, name="subscription_status", create_type=False),
+        default=SubscriptionStatus.active,
+        nullable=False,
+    )
 
 class PaymentEvent(Base):
     __tablename__ = "payment_events"
