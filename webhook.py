@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 from fastapi import FastAPI, Request, HTTPException
-from telegram import Bot
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
 from db import get_session
@@ -116,10 +116,14 @@ async def yookassa_webhook(request: Request):
                 text += "Подписка активирована."
             text += f"\nПодписка действует до: *{fmt_dt(sub.end_at)}*."
 
+            keyboard = [[InlineKeyboardButton("Перейти в закрытый чат 💬", url="https://t.me/c/2436392617/78")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
             await bot.send_message(
                 chat_id=int(chat_id),
                 text=text,
                 parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reply_markup
             )
         except Exception:
             log.exception("Failed to send Telegram notification")
