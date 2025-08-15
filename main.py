@@ -14,7 +14,7 @@ from yookassa import Configuration, Payment
 
 # ==== наши модули (отдельные файлы) ====
 from db import get_session
-from subscriptions import (
+from services.subscriptions import (
     get_or_create_user,
     create_pending_payment,
 )
