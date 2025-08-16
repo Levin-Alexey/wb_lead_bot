@@ -72,20 +72,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         logger.warning(f"Не удалось отправить видео кружочек: {e}")
 
-    # Затем отправляем приветственное сообщение с фото
+    # Затем отправляем приветственное сообщение
     welcome_text = """Посмотри кружок и нажимай на кнопку снизу, чтобы узнать подробнее о MarketSkills: 👇🏻"""
 
-    photo_path = "content/photo1.jpg"
-
-    try:
-        with open(photo_path, 'rb') as photo:
-            await update.message.reply_photo(
-                photo=photo,
-                caption=welcome_text
-            )
-    except Exception as e:
-        logger.warning(f"Не удалось отправить фото: {e}")
-        await update.message.reply_text(welcome_text)
+    await update.message.reply_text(welcome_text)
 
     # Задержка в 1 секунду перед отправкой кнопок
     await asyncio.sleep(1)
@@ -109,10 +99,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logger.warning(f"Не удалось отправить фото с кнопками: {e}")
         await update.message.reply_text("Выберите действие:", reply_markup=button_reply_markup)
 
-    # Запуск таймера на 10 секунд для автоматической отправки следующего сообщения
-    chat_id = update.message.chat.id
-    if context.job_queue:
-        context.job_queue.run_once(send_community_message, 10, chat_id=chat_id, name=f"auto_msg_{chat_id}")
+    # Таймер отключен - сообщение о комьюнити будет отправляться только при нажатии кнопки
+    # chat_id = update.message.chat.id
+    # if context.job_queue:
+    #     context.job_queue.run_once(send_community_message, 10, chat_id=chat_id, name=f"auto_msg_{chat_id}")
 
 
 async def send_community_message(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -204,6 +194,10 @@ async def send_community_message_direct(chat_id: int, context: ContextTypes.DEFA
 Когда, если не сейчас. Вступай!"""
 
     photo_path = "content/photo3.jpg"
+    
+    # Создаем кнопку подключения к комьюнити
+    connect_keyboard = [[InlineKeyboardButton("💥 Подключиться 💥", callback_data='connect_community')]]
+    connect_reply_markup = InlineKeyboardMarkup(connect_keyboard)
 
     try:
         with open(photo_path, 'rb') as photo:
@@ -211,29 +205,17 @@ async def send_community_message_direct(chat_id: int, context: ContextTypes.DEFA
                 chat_id=chat_id,
                 photo=photo,
                 caption=community_text,
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
+                reply_markup=connect_reply_markup
             )
     except Exception as e:
         logger.warning(f"Не удалось отправить фото комьюнити: {e}")
         await context.bot.send_message(
             chat_id=chat_id,
             text=community_text,
-            parse_mode=ParseMode.HTML
+            parse_mode=ParseMode.HTML,
+            reply_markup=connect_reply_markup
         )
-
-    # Запуск таймера на 3 секунды для отправки кнопки подключения к комьюнити
-    import asyncio
-    await asyncio.sleep(3)
-    
-    # Отправляем текст и кнопку подключения к комьюнити
-    connect_keyboard = [[InlineKeyboardButton("💥 Подключиться 💥", callback_data='connect_community')]]
-    connect_reply_markup = InlineKeyboardMarkup(connect_keyboard)
-    
-    await context.bot.send_message(
-        chat_id=chat_id,
-        text="🔥🔥🔥 ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ 🔥🔥🔥",
-        reply_markup=connect_reply_markup
-    )
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -317,14 +299,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     if query.data == 'all_good_continue':
         # Обработчик для кнопки "Все супер, дальше🚀"
-        # Отменяем автоматический таймер
-        chat_id = query.message.chat.id
-        if context.job_queue:
-            current_jobs = context.job_queue.get_jobs_by_name(f"auto_msg_{chat_id}")
-            for job_to_cancel in current_jobs:
-                job_to_cancel.schedule_removal()
-        
-        # Сразу отправляем сообщение о комьюнити
+        # Отправляем сообщение о комьюнити
         await send_community_message_direct(query.message.chat.id, context)
 
     elif query.data == 'connect_community':
@@ -338,25 +313,21 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 @spoddershka"""
         
         photo_path = "content/photo2.jpg"
+        
+        # Создаем кнопку "Выбрать тариф"
+        choose_tariff_keyboard = [[InlineKeyboardButton("🤝 Выбрать тариф 🤝", callback_data='choose_tariff_step')]]
+        choose_tariff_reply_markup = InlineKeyboardMarkup(choose_tariff_keyboard)
 
         try:
             with open(photo_path, 'rb') as photo:
                 await query.message.reply_photo(
                     photo=photo,
-                    caption=tariff_text
+                    caption=tariff_text,
+                    reply_markup=choose_tariff_reply_markup
                 )
         except Exception as e:
             logger.warning(f"Не удалось отправить фото с тарифами: {e}")
-            await query.message.reply_text(tariff_text)
-        
-        # Добавляем текст и кнопку "Выбрать тариф"
-        choose_tariff_keyboard = [[InlineKeyboardButton("🤝 Выбрать тариф 🤝", callback_data='choose_tariff_step')]]
-        choose_tariff_reply_markup = InlineKeyboardMarkup(choose_tariff_keyboard)
-        
-        await query.message.reply_text(
-            text="💎💎💎 ВЫБРАТЬ ТАРИФ 💎💎💎",
-            reply_markup=choose_tariff_reply_markup
-        )
+            await query.message.reply_text(tariff_text, reply_markup=choose_tariff_reply_markup)
 
     elif query.data == 'choose_tariff_step':
         # Обработчик для кнопки "🤝Выбрать тариф"
