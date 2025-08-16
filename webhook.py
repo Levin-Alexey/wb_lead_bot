@@ -107,24 +107,30 @@ async def yookassa_webhook(request: Request):
     # 3) Уведомляем пользователя в Telegram (если chat_id передали в metadata)
     if chat_id:
         try:
-            text = "🎉 Оплата прошла успешно! "
-            if tariff == "monthly":
-                text += "Активирован тариф *Помесячный* (1 мес.)."
-            elif tariff == "stable":
-                text += "Активирован тариф *Стабильный* (3 мес.)."
-            else:
-                text += "Подписка активирована."
-            text += f"\nПодписка действует до: *{fmt_dt(sub.end_at)}*."
+            text = """Оплата прошла успешно!
 
-            keyboard = [[InlineKeyboardButton("Перейти в закрытый чат 💬", url="https://t.me/c/2436392617/78")]]
+Добро пожаловать в МаркетСкиллс. Закреп этого бота чтобы не потерять, здесь будут лучшие предложения для участие в клубе. Подключайся👇🏻"""
+
+            keyboard = [[InlineKeyboardButton("Подключиться", url="https://t.me/c/2436392617/78")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
-            await bot.send_message(
-                chat_id=int(chat_id),
-                text=text,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=reply_markup
-            )
+            photo_path = "content/photo4.jpg"
+
+            try:
+                with open(photo_path, 'rb') as photo:
+                    await bot.send_photo(
+                        chat_id=int(chat_id),
+                        photo=photo,
+                        caption=text,
+                        reply_markup=reply_markup
+                    )
+            except Exception as e:
+                log.warning(f"Не удалось отправить фото: {e}")
+                await bot.send_message(
+                    chat_id=int(chat_id),
+                    text=text,
+                    reply_markup=reply_markup
+                )
         except Exception:
             log.exception("Failed to send Telegram notification")
 
