@@ -37,6 +37,9 @@ YOOKASSA_SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
 YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
 RETURN_URL = os.getenv("RETURN_URL", "https://t.me/YourBotName")
 
+# Видео файлы
+VIDEO_FILE_ID_1 = 'BAACAgIAAxkBAAPTaJ9jbaycfNg3dN8WSL3NwpxvsGcAAtp4AAKoBwABSbBDm2NB29gxNgQ'
+
 # Настраиваем SDK ЮKassa
 Configuration.account_id = YOOKASSA_SHOP_ID
 Configuration.secret_key = YOOKASSA_SECRET_KEY
@@ -55,13 +58,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         await session.commit()
 
-    keyboard = [[InlineKeyboardButton("Узнать подробнее", callback_data='learn_more')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Сначала отправляем видео кружочек
+    try:
+        await update.message.reply_video_note(video_note=VIDEO_FILE_ID_1)
+        # Добавляем небольшую задержку перед отправкой следующего сообщения
+        import asyncio
+        await asyncio.sleep(1)
+    except Exception as e:
+        logger.warning(f"Не удалось отправить видео кружочек: {e}")
 
-    welcome_text = """ДОБРО ПОЖАЛОВАТЬ 
-В MARKETSKILLS 🥳
-
-Ты уже в шаге от вступление в наше сообщество. Жми ниже 🚀"""
+    # Затем отправляем приветственное сообщение с фото
+    welcome_text = """Посмотри кружок и нажимай на кнопку снизу, чтобы узнать подробнее о MarketSkills: 👇🏻"""
 
     photo_path = "content/photo1.jpg"
 
@@ -69,12 +76,39 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         with open(photo_path, 'rb') as photo:
             await update.message.reply_photo(
                 photo=photo,
-                caption=welcome_text,
-                reply_markup=reply_markup
+                caption=welcome_text
             )
     except Exception as e:
         logger.warning(f"Не удалось отправить фото: {e}")
-        await update.message.reply_text(welcome_text, reply_markup=reply_markup)
+        await update.message.reply_text(welcome_text)
+
+    # Задержка в 1 секунду перед отправкой кнопок
+    await asyncio.sleep(1)
+
+    # Отправляем картинку с двумя кнопками на всю ширину
+    button_keyboard = [
+        [InlineKeyboardButton("Смотреть инструкцию 👀", callback_data='watch_instruction')],
+        [InlineKeyboardButton("Все супер, дальше🚀", callback_data='all_good_continue')]
+    ]
+    button_reply_markup = InlineKeyboardMarkup(button_keyboard)
+
+    button_text = """ДОБРО ПОЖАЛОВАТЬ 
+В MARKETSKILLS 🥳
+
+Ты уже в шаге от вступление в наше сообщество. Жми ниже 🚀"""
+
+    button_photo_path = "content/3810.PNG"
+
+    try:
+        with open(button_photo_path, 'rb') as photo:
+            await update.message.reply_photo(
+                photo=photo,
+                caption=button_text,
+                reply_markup=button_reply_markup
+            )
+    except Exception as e:
+        logger.warning(f"Не удалось отправить фото с кнопками: {e}")
+        await update.message.reply_text(button_text, reply_markup=button_reply_markup)
 
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
