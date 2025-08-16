@@ -8,7 +8,7 @@ from telegram.constants import ParseMode
 from telegram import WebAppInfo
 from telegram.ext import (
     Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ContextTypes, filters
+    ContextTypes, filters, JobQueue
 )
 
 from yookassa import Configuration, Payment
@@ -111,7 +111,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Запуск таймера на 10 секунд для автоматической отправки следующего сообщения
     chat_id = update.message.chat.id
-    context.job_queue.run_once(send_community_message, 10, chat_id=chat_id, name=f"auto_msg_{chat_id}")
+    if context.job_queue:
+        context.job_queue.run_once(send_community_message, 10, chat_id=chat_id, name=f"auto_msg_{chat_id}")
 
 
 async def send_community_message(context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -318,9 +319,10 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         # Обработчик для кнопки "Все супер, дальше🚀"
         # Отменяем автоматический таймер
         chat_id = query.message.chat.id
-        current_jobs = context.job_queue.get_jobs_by_name(f"auto_msg_{chat_id}")
-        for job_to_cancel in current_jobs:
-            job_to_cancel.schedule_removal()
+        if context.job_queue:
+            current_jobs = context.job_queue.get_jobs_by_name(f"auto_msg_{chat_id}")
+            for job_to_cancel in current_jobs:
+                job_to_cancel.schedule_removal()
         
         # Сразу отправляем сообщение о комьюнити
         await send_community_message_direct(query.message.chat.id, context)
@@ -535,7 +537,9 @@ def main() -> None:
         logger.error("BOT_TOKEN не найден в переменных окружения!")
         return
 
-    application = Application.builder().token(BOT_TOKEN).build()
+    # Создаем приложение с Job Queue
+    job_queue = JobQueue()
+    application = Application.builder().token(BOT_TOKEN).job_queue(job_queue).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
