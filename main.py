@@ -169,13 +169,13 @@ async def send_community_message(context: ContextTypes.DEFAULT_TYPE) -> None:
     import asyncio
     await asyncio.sleep(3)
     
-    # Отправляем кнопку подключения к комьюнити
-    connect_keyboard = [[InlineKeyboardButton("💥━━━ ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ ━━━💥", callback_data='connect_community')]]
+    # Отправляем текст и кнопку подключения к комьюнити
+    connect_keyboard = [[InlineKeyboardButton("💥 Подключиться 💥", callback_data='connect_community')]]
     connect_reply_markup = InlineKeyboardMarkup(connect_keyboard)
     
     await context.bot.send_message(
         chat_id=chat_id,
-        text="👆🏻",
+        text="🔥🔥🔥 ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ 🔥🔥🔥",
         reply_markup=connect_reply_markup
     )
 
@@ -225,13 +225,13 @@ async def send_community_message_direct(chat_id: int, context: ContextTypes.DEFA
     import asyncio
     await asyncio.sleep(3)
     
-    # Отправляем кнопку подключения к комьюнити
-    connect_keyboard = [[InlineKeyboardButton("💥━━━ ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ ━━━💥", callback_data='connect_community')]]
+    # Отправляем текст и кнопку подключения к комьюнити
+    connect_keyboard = [[InlineKeyboardButton("💥 Подключиться 💥", callback_data='connect_community')]]
     connect_reply_markup = InlineKeyboardMarkup(connect_keyboard)
     
     await context.bot.send_message(
         chat_id=chat_id,
-        text="👆🏻",
+        text="🔥🔥🔥 ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ 🔥🔥🔥",
         reply_markup=connect_reply_markup
     )
 
@@ -349,12 +349,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             logger.warning(f"Не удалось отправить фото с тарифами: {e}")
             await query.message.reply_text(tariff_text)
         
-        # Добавляем кнопку "Выбрать тариф"
-        choose_tariff_keyboard = [[InlineKeyboardButton("🤝━━━━━ ВЫБРАТЬ ТАРИФ ━━━━━🤝", callback_data='choose_tariff_step')]]
+        # Добавляем текст и кнопку "Выбрать тариф"
+        choose_tariff_keyboard = [[InlineKeyboardButton("🤝 Выбрать тариф 🤝", callback_data='choose_tariff_step')]]
         choose_tariff_reply_markup = InlineKeyboardMarkup(choose_tariff_keyboard)
         
         await query.message.reply_text(
-            text="👆🏻",
+            text="💎💎💎 ВЫБРАТЬ ТАРИФ 💎💎💎",
             reply_markup=choose_tariff_reply_markup
         )
 
