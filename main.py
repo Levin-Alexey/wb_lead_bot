@@ -82,7 +82,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Отправляем картинку с двумя кнопками на всю ширину
     button_keyboard = [
-        [InlineKeyboardButton("Смотреть инструкцию 👀", web_app=WebAppInfo(url="https://drive.google.com/file/d/1NdvO8iU6ttVxhsdH-Wmj_--nlQE9wOi5/view?usp=sharing"))],
+        [InlineKeyboardButton("Смотреть инструкцию 👀", web_app=WebAppInfo(url="https://drive.google.com/file/d/1NdvO8iU6ttVxhsdH-Wmj_--nlQE9wOi5/view"))],
         [InlineKeyboardButton("Все супер, дальше🚀", callback_data='all_good_continue')]
     ]
     button_reply_markup = InlineKeyboardMarkup(button_keyboard)
