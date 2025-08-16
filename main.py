@@ -72,32 +72,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception as e:
         logger.warning(f"Не удалось отправить видео кружочек: {e}")
 
-    # Затем отправляем приветственное сообщение
+    # Затем отправляем приветственное сообщение с кнопкой
     welcome_text = """Посмотри кружок и нажимай на кнопку снизу, чтобы узнать подробнее о MarketSkills: 👇🏻"""
+    
+    # Создаем кнопку "Смотреть видео"
+    video_keyboard = [[InlineKeyboardButton("Смотреть видео 📹", callback_data='watch_video')]]
+    video_reply_markup = InlineKeyboardMarkup(video_keyboard)
 
-    await update.message.reply_text(welcome_text)
-
-    # Задержка в 1 секунду перед отправкой кнопок
-    await asyncio.sleep(1)
-
-    # Отправляем картинку с двумя кнопками на всю ширину
-    button_keyboard = [
-        [InlineKeyboardButton("Смотреть инструкцию 👀", web_app=WebAppInfo(url="https://drive.google.com/file/d/1NdvO8iU6ttVxhsdH-Wmj_--nlQE9wOi5/view"))],
-        [InlineKeyboardButton("Все супер, дальше🚀", callback_data='all_good_continue')]
-    ]
-    button_reply_markup = InlineKeyboardMarkup(button_keyboard)
-
-    button_photo_path = "content/3810.JPG"
-
-    try:
-        with open(button_photo_path, 'rb') as photo:
-            await update.message.reply_photo(
-                photo=photo,
-                reply_markup=button_reply_markup
-            )
-    except Exception as e:
-        logger.warning(f"Не удалось отправить фото с кнопками: {e}")
-        await update.message.reply_text("Выберите действие:", reply_markup=button_reply_markup)
+    await update.message.reply_text(welcome_text, reply_markup=video_reply_markup)
 
     # Таймер отключен - сообщение о комьюнити будет отправляться только при нажатии кнопки
     # chat_id = update.message.chat.id
@@ -302,6 +284,27 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         # Отправляем сообщение о комьюнити
         await send_community_message_direct(query.message.chat.id, context)
 
+    elif query.data == 'watch_video':
+        # Обработчик для кнопки "Смотреть видео 📹"
+        # Отправляем картинку с двумя кнопками
+        button_keyboard = [
+            [InlineKeyboardButton("Смотреть инструкцию 👀", web_app=WebAppInfo(url="https://rutube.ru/video/private/749e29cb5ef61090468cf42120ad016b/?p=Q8BIQDKmwYGd2m9-lm9yKQ"))],
+            [InlineKeyboardButton("Все супер, дальше🚀", callback_data='all_good_continue')]
+        ]
+        button_reply_markup = InlineKeyboardMarkup(button_keyboard)
+
+        button_photo_path = "content/3810.JPG"
+
+        try:
+            with open(button_photo_path, 'rb') as photo:
+                await query.message.reply_photo(
+                    photo=photo,
+                    reply_markup=button_reply_markup
+                )
+        except Exception as e:
+            logger.warning(f"Не удалось отправить фото с кнопками: {e}")
+            await query.message.reply_text("Выберите действие:", reply_markup=button_reply_markup)
+
     elif query.data == 'connect_community':
         # Обработчик для кнопки "💥Подключиться к комьюнити"
         tariff_text = """Выбирай подходящий тариф! 👌🏻
@@ -333,10 +336,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         # Обработчик для кнопки "🤝Выбрать тариф"
         oferta_url = "https://docs.yandex.ru/docs/view?url=ya-disk-public%3A%2F%2FZkx7HkIuQDpkVUiXOfvHBOO%2FQPNC9%2Fxb%2BiOzOS22ub%2FpW7TeWe4Yk3b3NEtMKypTq%2FJ6bpmRyOJonT3VoXnDag%3D%3D"
         
-        oferta_text = f"""Ты уже в шаге от нас! 🥹
-Перед тем как тебя перенаправит 
-на оплату, нажимая на кнопку: "Далее" ты 
-соглашаешься с условиями <a href="{oferta_url}">Публичной офферты</a>"""
+        oferta_text = f"""<b>Ты уже в шаге от нас!</b> 🥹
+Перед тем как тебя перенаправит на оплату, нажимая на кнопку: <b>"Далее"</b> ты соглашаешься с <a href="{oferta_url}">Публичной офферты</a>"""
 
         dalee_keyboard = [[InlineKeyboardButton("Далее", callback_data='proceed_to_payment')]]
         dalee_reply_markup = InlineKeyboardMarkup(dalee_keyboard)
@@ -351,13 +352,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     elif query.data == 'proceed_to_payment':
         # Обработчик для кнопки "Далее"
         payment_keyboard = [
-            [InlineKeyboardButton("Оплата картой РФ", callback_data='payment_rf_card')],
-            [InlineKeyboardButton("Оплата картой иностранного банка", callback_data='payment_foreign_card')]
+            [InlineKeyboardButton("Оплата картой РФ 🇷🇺", callback_data='payment_rf_card')],
+            [InlineKeyboardButton("Оплата не РФ 🌍", callback_data='payment_foreign_card')]
         ]
         payment_reply_markup = InlineKeyboardMarkup(payment_keyboard)
 
         await query.message.reply_text(
-            text="Выберите способ оплаты:",
+            text="<b>Выберите способ оплаты</b> 💳:",
+            parse_mode=ParseMode.HTML,
             reply_markup=payment_reply_markup
         )
 
