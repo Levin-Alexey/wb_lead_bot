@@ -60,7 +60,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Сначала отправляем видео кружочек
     try:
-        await update.message.reply_video_note(video_note=VIDEO_FILE_ID_1)
+        await context.bot.send_video_note(
+            chat_id=update.message.chat.id,
+            video_note=VIDEO_FILE_ID_1
+        )
         # Добавляем небольшую задержку перед отправкой следующего сообщения
         import asyncio
         await asyncio.sleep(1)
