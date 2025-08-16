@@ -170,7 +170,7 @@ async def send_community_message(context: ContextTypes.DEFAULT_TYPE) -> None:
     await asyncio.sleep(3)
     
     # Отправляем кнопку подключения к комьюнити
-    connect_keyboard = [[InlineKeyboardButton("💥 ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ 💥", callback_data='connect_community')]]
+    connect_keyboard = [[InlineKeyboardButton("💥━━━ ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ ━━━💥", callback_data='connect_community')]]
     connect_reply_markup = InlineKeyboardMarkup(connect_keyboard)
     
     await context.bot.send_message(
@@ -226,7 +226,7 @@ async def send_community_message_direct(chat_id: int, context: ContextTypes.DEFA
     await asyncio.sleep(3)
     
     # Отправляем кнопку подключения к комьюнити
-    connect_keyboard = [[InlineKeyboardButton("💥 ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ 💥", callback_data='connect_community')]]
+    connect_keyboard = [[InlineKeyboardButton("💥━━━ ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ ━━━💥", callback_data='connect_community')]]
     connect_reply_markup = InlineKeyboardMarkup(connect_keyboard)
     
     await context.bot.send_message(
@@ -350,7 +350,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             await query.message.reply_text(tariff_text)
         
         # Добавляем кнопку "Выбрать тариф"
-        choose_tariff_keyboard = [[InlineKeyboardButton("🤝 ВЫБРАТЬ ТАРИФ 🤝", callback_data='choose_tariff_step')]]
+        choose_tariff_keyboard = [[InlineKeyboardButton("🤝━━━━━ ВЫБРАТЬ ТАРИФ ━━━━━🤝", callback_data='choose_tariff_step')]]
         choose_tariff_reply_markup = InlineKeyboardMarkup(choose_tariff_keyboard)
         
         await query.message.reply_text(
