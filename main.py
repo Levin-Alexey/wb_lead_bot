@@ -288,7 +288,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         # Обработчик для кнопки "Смотреть видео 📹"
         # Отправляем картинку с двумя кнопками
         button_keyboard = [
-            [InlineKeyboardButton("Смотреть инструкцию 👀", web_app=WebAppInfo(url="https://rutube.ru/video/private/749e29cb5ef61090468cf42120ad016b/?p=Q8BIQDKmwYGd2m9-lm9yKQ"))],
+            [InlineKeyboardButton("Смотреть инструкцию 👀", url="https://disk.yandex.ru/d/4UDQVRfIjnfUSw")],
             [InlineKeyboardButton("Все супер, дальше🚀", callback_data='all_good_continue')]
         ]
         button_reply_markup = InlineKeyboardMarkup(button_keyboard)
