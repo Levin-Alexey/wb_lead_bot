@@ -38,7 +38,7 @@ YOOKASSA_SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
 RETURN_URL = os.getenv("RETURN_URL", "https://t.me/YourBotName")
 
 # Видео файлы
-VIDEO_FILE_ID_1 = 'BAACAgIAAxkBAAPTaJ9jbaycfNg3dN8WSL3NwpxvsGcAAtp4AAKoBwABSbBDm2NB29gxNgQ'
+VIDEO_PATH = "content/doc_2025-08-15_19-37-12.mp4"  # квадратное видео
 
 # Настраиваем SDK ЮKassa
 Configuration.account_id = YOOKASSA_SHOP_ID
@@ -60,10 +60,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     # Сначала отправляем видео кружочек
     try:
-        await context.bot.send_video_note(
-            chat_id=update.message.chat.id,
-            video_note=VIDEO_FILE_ID_1
-        )
+        with open(VIDEO_PATH, "rb") as f:
+            await context.bot.send_video_note(
+                chat_id=update.message.chat.id,
+                video_note=f
+            )
         # Добавляем небольшую задержку перед отправкой следующего сообщения
         import asyncio
         await asyncio.sleep(1)
