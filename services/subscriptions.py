@@ -1,5 +1,5 @@
 # services/subscriptions.py
-from datetime import datetime
+from datetime import datetime, timezone
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -34,7 +34,7 @@ async def mark_payment_succeeded(session: AsyncSession, payment_db_id: int, prov
     if not p:
         raise ValueError("Payment not found")
     p.status = PaymentStatus.succeeded
-    p.paid_at = datetime.utcnow()
+    p.paid_at = datetime.now(timezone.utc)
     p.provider_payment_id = provider_payment_id
     p.provider_metadata = payload  # <-- было p.metadata = payload
     await session.flush()
@@ -54,7 +54,7 @@ async def activate_or_extend_subscription(session: AsyncSession, user_id: int, t
         # fallback на значение из БД если тариф неизвестный
         months_to_add = tariff.duration_months
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     # ищем активную подписку
     sub = await session.scalar(
         select(Subscription)
