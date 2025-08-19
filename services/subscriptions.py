@@ -64,12 +64,14 @@ async def activate_or_extend_subscription(session: AsyncSession, user_id: int, t
     )
 
     if sub and sub.end_at > now:
-        # продлеваем
+        # продлеваем существующую подписку
         new_end = sub.end_at + relativedelta(months=months_to_add)
         # Убираем timezone для PostgreSQL
         if hasattr(new_end, 'replace'):
             new_end = new_end.replace(tzinfo=None)
         sub.end_at = new_end
+        # Обновляем created_at при повторной оплате
+        sub.created_at = now.replace(tzinfo=None) 
         await session.flush()
         return sub
 
