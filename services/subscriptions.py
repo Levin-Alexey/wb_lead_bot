@@ -34,7 +34,7 @@ async def mark_payment_succeeded(session: AsyncSession, payment_db_id: int, prov
     if not p:
         raise ValueError("Payment not found")
     p.status = PaymentStatus.succeeded
-    p.paid_at = datetime.now(timezone.utc)
+    p.paid_at = datetime.utcnow().replace(tzinfo=timezone.utc)
     p.provider_payment_id = provider_payment_id
     p.provider_metadata = payload  # <-- было p.metadata = payload
     await session.flush()
@@ -54,7 +54,7 @@ async def activate_or_extend_subscription(session: AsyncSession, user_id: int, t
         # fallback на значение из БД если тариф неизвестный
         months_to_add = tariff.duration_months
 
-    now = datetime.now(timezone.utc)
+    now = datetime.utcnow().replace(tzinfo=timezone.utc)
     # ищем активную подписку
     sub = await session.scalar(
         select(Subscription)
@@ -66,6 +66,9 @@ async def activate_or_extend_subscription(session: AsyncSession, user_id: int, t
     if sub and sub.end_at > now:
         # продлеваем
         new_end = sub.end_at + relativedelta(months=months_to_add)
+        # Убираем timezone для PostgreSQL
+        if hasattr(new_end, 'replace'):
+            new_end = new_end.replace(tzinfo=None)
         sub.end_at = new_end
         await session.flush()
         return sub
@@ -74,8 +77,8 @@ async def activate_or_extend_subscription(session: AsyncSession, user_id: int, t
     new_sub = Subscription(
         user_id=user_id,
         tariff_code=tariff.code,
-        start_at=now,
-        end_at=now + relativedelta(months=months_to_add),
+        start_at=now.replace(tzinfo=None),
+        end_at=(now + relativedelta(months=months_to_add)).replace(tzinfo=None),
         status=SubscriptionStatus.active
     )
     session.add(new_sub)
