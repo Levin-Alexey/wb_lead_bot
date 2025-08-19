@@ -84,7 +84,7 @@ async def yookassa_webhook(request: Request):
         log.error("Missing metadata.payment_db_id in webhook payload")
         raise HTTPException(status_code=400, detail="Missing payment_db_id")
 
-    async for session in get_session():
+    async with get_session() as session:
         try:
             # 1) Обновляем запись платежа: succeeded + paid_at + provider_payment_id + сырой payload
             payment: PaymentDB = await mark_payment_succeeded(
