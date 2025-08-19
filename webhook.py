@@ -1,11 +1,18 @@
 # webhook.py
+
+from dotenv import load_dotenv
+
+load_dotenv()  # Загружаем .env файл
+
 import os
 import logging
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import FastAPI, Request, HTTPException
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
+import aiofiles
 
 from db import get_session
 from subscriptions import (
@@ -114,24 +121,42 @@ async def yookassa_webhook(request: Request):
             keyboard = [[InlineKeyboardButton("Подключиться", url="https://t.me/c/2436392617/78")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
-            photo_path = "content/photo4.jpg"
+            # Используем абсолютный путь к файлу
+            photo_path = Path(__file__).parent / "content" / "photo4.jpg"
 
             try:
-                with open(photo_path, 'rb') as photo:
+                # Проверяем существование файла
+                if not photo_path.exists():
+                    log.error(f"Файл не найден: {photo_path}")
+                    raise FileNotFoundError(f"Photo file not found: {photo_path}")
+                
+                # Асинхронное чтение файла
+                async with aiofiles.open(photo_path, 'rb') as photo:
+                    photo_data = await photo.read()
                     await bot.send_photo(
                         chat_id=int(chat_id),
-                        photo=photo,
+                        photo=photo_data,
                         caption=text,
                         reply_markup=reply_markup
                     )
-            except Exception as e:
-                log.warning(f"Не удалось отправить фото: {e}")
+                log.info(f"Успешно отправлено фото пользователю {chat_id}")
+            except FileNotFoundError as e:
+                log.error(f"Файл не найден: {e}")
                 await bot.send_message(
                     chat_id=int(chat_id),
                     text=text,
                     reply_markup=reply_markup
                 )
-        except Exception:
-            log.exception("Failed to send Telegram notification")
+                log.info(f"Отправлено текстовое сообщение пользователю {chat_id} (без фото)")
+            except Exception as e:
+                log.error(f"Ошибка при отправке фото пользователю {chat_id}: {e}")
+                await bot.send_message(
+                    chat_id=int(chat_id),
+                    text=text,
+                    reply_markup=reply_markup
+                )
+                log.info(f"Отправлено текстовое сообщение пользователю {chat_id} (fallback)")
+        except Exception as e:
+            log.exception(f"Критическая ошибка при отправке уведомления пользователю {chat_id}: {e}")
 
     return {"status": "ok"}

@@ -45,6 +45,15 @@ async def activate_or_extend_subscription(session: AsyncSession, user_id: int, t
     if not tariff:
         raise ValueError("Unknown tariff")
 
+    # Определяем период подписки согласно тарифу
+    if tariff_code == "monthly":
+        months_to_add = 1
+    elif tariff_code == "stable":
+        months_to_add = 3
+    else:
+        # fallback на значение из БД если тариф неизвестный
+        months_to_add = tariff.duration_months
+
     now = datetime.utcnow()
     # ищем активную подписку
     sub = await session.scalar(
@@ -56,7 +65,7 @@ async def activate_or_extend_subscription(session: AsyncSession, user_id: int, t
 
     if sub and sub.end_at > now:
         # продлеваем
-        new_end = sub.end_at + relativedelta(months=tariff.duration_months)
+        new_end = sub.end_at + relativedelta(months=months_to_add)
         sub.end_at = new_end
         await session.flush()
         return sub
@@ -66,7 +75,7 @@ async def activate_or_extend_subscription(session: AsyncSession, user_id: int, t
         user_id=user_id,
         tariff_code=tariff.code,
         start_at=now,
-        end_at=now + relativedelta(months=tariff.duration_months),
+        end_at=now + relativedelta(months=months_to_add),
         status=SubscriptionStatus.active
     )
     session.add(new_sub)
