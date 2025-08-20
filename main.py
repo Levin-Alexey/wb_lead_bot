@@ -19,6 +19,7 @@ from services.subscriptions import (
     get_or_create_user,
     create_pending_payment,
 )
+from services.n8n_service import n8n_service
 # Если webhook делаешь в отдельном сервисе, там же будут:
 #   mark_payment_succeeded, activate_or_extend_subscription
 
@@ -150,6 +151,56 @@ async def send_community_message(context: ContextTypes.DEFAULT_TYPE) -> None:
         text="🔥🔥🔥 ПОДКЛЮЧИТЬСЯ К КОМЬЮНИТИ 🔥🔥🔥",
         reply_markup=connect_reply_markup
     )
+
+
+async def send_payment_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Отправляет напоминание об оплате через 15 минут после создания ссылки"""
+    job = context.job
+    payment_id = job.data.get('payment_id')
+    chat_id = job.chat_id
+    
+    # Проверяем статус платежа перед отправкой напоминания
+    async with get_session() as session:
+        from models import Payment, PaymentStatus
+        payment = await session.get(Payment, payment_id)
+        
+        # Если платеж уже оплачен, не отправляем напоминание
+        if not payment or payment.status == PaymentStatus.succeeded:
+            return
+    
+    # Текст сообщения
+    reminder_text = """*Что-то не так с оплатой…* 😞
+Оплата не поступила, нажми на кнопку *'Перейти к оплате'* для того чтобы не откладывать дело на потом
+
+Если возникли сложности, по абсолютно любым вопросам ты можешь написать 'Помощнику' и он с радостью тебе поможет 😌"""
+    
+    # Создаем кнопки (пока без ссылок)
+    reminder_keyboard = [
+        [InlineKeyboardButton("Перейти к оплате", callback_data=f'retry_payment_{payment_id}')],
+        [InlineKeyboardButton("Помощник", callback_data='contact_support')]
+    ]
+    reminder_reply_markup = InlineKeyboardMarkup(reminder_keyboard)
+    
+    # Отправляем картинку с текстом
+    photo_path = "content/photo4.jpg"
+    
+    try:
+        with open(photo_path, 'rb') as photo:
+            await context.bot.send_photo(
+                chat_id=chat_id,
+                photo=photo,
+                caption=reminder_text,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=reminder_reply_markup
+            )
+    except Exception as e:
+        logger.warning(f"Не удалось отправить фото напоминания: {e}")
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=reminder_text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=reminder_reply_markup
+        )
 
 
 async def send_community_message_direct(chat_id: int, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -487,6 +538,42 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
             title = "*Тариф Помесячный* — 1490₽/мес." if tariff_code == "monthly" \
                 else "*Тариф Стабильный* — 3990₽ / 3 мес."
+            
+            # Запускаем таймер на 15 минут для напоминания об оплате
+            if context.job_queue:
+                context.job_queue.run_once(
+                    send_payment_reminder, 
+                    900,  # 15 минут в секундах
+                    chat_id=query.from_user.id, 
+                    name=f"payment_reminder_{payment.id}",
+                    data={'payment_id': payment.id}
+                )
+            
+            # Отправляем данные в N8N для 24-часового уведомления
+            try:
+                await n8n_service.send_payment_created_notification(
+                    user_id=user.id,
+                    payment_id=payment.id,
+                    chat_id=query.from_user.id,
+                    tariff_code=tariff_code,
+                    amount_rub=float(payment.amount_rub),
+                    provider_payment_id=provider_payment_id,
+                    payment_url=url
+                )
+                
+                # Также отправляем для 48-часового уведомления  
+                await n8n_service.send_48h_payment_created_notification(
+                    user_id=user.id,
+                    payment_id=payment.id,
+                    chat_id=query.from_user.id,
+                    tariff_code=tariff_code,
+                    amount_rub=float(payment.amount_rub),
+                    provider_payment_id=provider_payment_id,
+                    payment_url=url
+                )
+            except Exception as e:
+                logger.warning(f"Ошибка отправки уведомления в N8N: {e}")
+            
             await query.message.reply_text(
                 f"✅ Вы выбрали {title}\n"
                 f"Заявка на оплату №{payment.id} создана.\n"
@@ -497,6 +584,64 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         except Exception:
             logger.exception("Ошибка создания платежа в ЮKassa")
             await query.message.reply_text("❌ Не удалось создать платёж. Попробуйте позже.")
+
+    elif query.data.startswith('retry_payment_'):
+        # Обработчик для кнопки "Перейти к оплате" из напоминания
+        payment_id = int(query.data.split('_')[2])
+        
+        async with get_session() as session:
+            from models import Payment
+            payment = await session.get(Payment, payment_id)
+            
+            if payment and payment.provider_payment_id:
+                # Получаем информацию о платеже из ЮKassa
+                from yookassa import Payment as YKPayment
+                try:
+                    yk_payment = YKPayment.find_one(payment.provider_payment_id)
+                    if yk_payment and yk_payment.confirmation and yk_payment.confirmation.confirmation_url:
+                        await query.message.reply_text(
+                            f"💳 Перейдите по ссылке для завершения оплаты №{payment.id}:",
+                            reply_markup=InlineKeyboardMarkup([[
+                                InlineKeyboardButton("💳 Оплатить в ЮKassa", url=yk_payment.confirmation.confirmation_url)
+                            ]])
+                        )
+                    else:
+                        await query.message.reply_text("❌ Ссылка на оплату недоступна. Обратитесь в поддержку.")
+                except Exception as e:
+                    logger.error(f"Ошибка получения данных платежа из ЮKassa: {e}")
+                    await query.message.reply_text("❌ Ошибка получения ссылки на оплату. Попробуйте позже.")
+            else:
+                await query.message.reply_text("❌ Платеж не найден или ссылка недоступна.")
+
+    elif query.data == 'contact_support':
+        # Обработчик для кнопки "Помощник"
+        support_text = """🆘 <b>Поддержка MarketSkills</b>
+
+По всем вопросам оплаты или работы с платформой обращайтесь к:
+
+👤 @spoddershka
+
+Он поможет решить любые вопросы и проблемы! 😊"""
+        
+        await query.message.reply_text(
+            text=support_text,
+            parse_mode=ParseMode.HTML
+        )
+
+    elif query.data in ('notification_24h_connect', 'notification_48h_connect'):
+        # Обработчик для кнопки "Подключиться" из уведомлений 24ч и 48ч
+        # Переадресуем на существующий обработчик выбора способа оплаты
+        payment_keyboard = [
+            [InlineKeyboardButton("Оплата картой РФ 🇷🇺", callback_data='payment_rf_card')],
+            [InlineKeyboardButton("Оплата не РФ 🌍", callback_data='payment_foreign_card')]
+        ]
+        payment_reply_markup = InlineKeyboardMarkup(payment_keyboard)
+
+        await query.message.reply_text(
+            text="<b>Выберите способ оплаты</b> 💳:",
+            parse_mode=ParseMode.HTML,
+            reply_markup=payment_reply_markup
+        )
     # ------------------------------------------------------------
 
 

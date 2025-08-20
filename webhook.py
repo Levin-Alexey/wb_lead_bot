@@ -19,7 +19,13 @@ from subscriptions import (
     mark_payment_succeeded,
     activate_or_extend_subscription,
 )
-from models import Payment as PaymentDB  # только для типов/отладочных выборок
+from models import Payment as PaymentDB, PaymentStatus  # только для типов/отладочных выборок
+from services.notification_service import (
+    get_24h_notification_text,
+    get_24h_notification_keyboard,
+    get_48h_notification_text,
+    get_48h_notification_keyboard
+)
 
 # ------------------ Config & logging ------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -160,3 +166,82 @@ async def yookassa_webhook(request: Request):
             log.exception(f"Критическая ошибка при отправке уведомления пользователю {chat_id}: {e}")
 
     return {"status": "ok"}
+
+@app.post("/n8n/notification")
+async def n8n_notification_webhook(request: Request):
+    """
+    Endpoint для получения уведомлений от N8N о необходимости отправки 24ч/48ч сообщений
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    # Получаем данные из N8N
+    delay_hours = data.get("delay_hours")
+    payment_id = data.get("payment_id")
+    chat_id = data.get("chat_id")
+    user_id = data.get("user_id")
+
+    log.info(
+        f"[N8N] notification delay_hours={delay_hours} payment_id={payment_id} "
+        f"chat_id={chat_id} user_id={user_id}"
+    )
+
+    if not all([delay_hours, payment_id, chat_id]):
+        log.error("Missing required fields in N8N notification")
+        raise HTTPException(status_code=400, detail="Missing required fields")
+
+    # Проверяем статус платежа перед отправкой уведомления
+    async with get_session() as session:
+        try:
+            payment = await session.get(PaymentDB, payment_id)
+            
+            # Если платеж не найден или уже оплачен, не отправляем уведомление
+            if not payment or payment.status == PaymentStatus.succeeded:
+                log.info(f"Payment {payment_id} not found or already paid, skipping notification")
+                return {"status": "skipped", "reason": "payment_not_found_or_paid"}
+                
+        except Exception as e:
+            log.error(f"Error checking payment status: {e}")
+            raise HTTPException(status_code=500, detail="database_error")
+
+    # Отправляем соответствующее уведомление
+    try:
+        if delay_hours == 24:
+            # 24-часовое уведомление
+            text = get_24h_notification_text()
+            keyboard = get_24h_notification_keyboard()
+            
+            await bot.send_message(
+                chat_id=int(chat_id),
+                text=text,
+                parse_mode=ParseMode.HTML,
+                reply_markup=keyboard
+            )
+            
+            log.info(f"Sent 24h notification to user {chat_id}")
+            
+        elif delay_hours == 48:
+            # 48-часовое уведомление
+            text = get_48h_notification_text()
+            keyboard = get_48h_notification_keyboard()
+            
+            await bot.send_message(
+                chat_id=int(chat_id),
+                text=text,
+                parse_mode=ParseMode.HTML,
+                reply_markup=keyboard
+            )
+            
+            log.info(f"Sent 48h notification to user {chat_id}")
+            
+        else:
+            log.warning(f"Unknown delay_hours value: {delay_hours}")
+            return {"status": "error", "reason": "unknown_delay_hours"}
+            
+    except Exception as e:
+        log.exception(f"Failed to send notification to user {chat_id}: {e}")
+        raise HTTPException(status_code=500, detail="telegram_send_error")
+
+    return {"status": "ok", "notification_type": f"{delay_hours}h"}
