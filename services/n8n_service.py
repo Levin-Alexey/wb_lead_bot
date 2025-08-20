@@ -10,7 +10,8 @@ logger = logging.getLogger(__name__)
 
 class N8NService:
     def __init__(self):
-        self.webhook_url = os.getenv("N8N_WEBHOOK_URL")
+        self.webhook_url_24h = os.getenv("N8N_WEBHOOK_URL_24H")
+        self.webhook_url_48h = os.getenv("N8N_WEBHOOK_URL_48H")
         self.timeout = 10.0
     
     async def send_payment_created_notification(
@@ -24,10 +25,10 @@ class N8NService:
         payment_url: str
     ) -> bool:
         """
-        Отправляет уведомление в N8N о создании платежа для отложенной нотификации
+        Отправляет уведомление в N8N о создании платежа для 24-часовой нотификации
         """
-        if not self.webhook_url:
-            logger.warning("N8N_WEBHOOK_URL не настроен")
+        if not self.webhook_url_24h:
+            logger.warning("N8N_WEBHOOK_URL_24H не настроен")
             return False
         
         payload = {
@@ -46,16 +47,16 @@ class N8NService:
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
-                    self.webhook_url,
+                    self.webhook_url_24h,
                     json=payload,
                     headers={"Content-Type": "application/json"}
                 )
                 
                 if response.status_code == 200:
-                    logger.info(f"Успешно отправлено уведомление в N8N для платежа {payment_id}")
+                    logger.info(f"Успешно отправлено 24ч уведомление в N8N для платежа {payment_id}")
                     return True
                 else:
-                    logger.error(f"Ошибка отправки в N8N: {response.status_code} - {response.text}")
+                    logger.error(f"Ошибка отправки 24ч уведомления в N8N: {response.status_code} - {response.text}")
                     return False
                     
         except httpx.TimeoutException:
@@ -78,8 +79,8 @@ class N8NService:
         """
         Отправляет уведомление в N8N о создании платежа для 48-часовой нотификации
         """
-        if not self.webhook_url:
-            logger.warning("N8N_WEBHOOK_URL не настроен")
+        if not self.webhook_url_48h:
+            logger.warning("N8N_WEBHOOK_URL_48H не настроен")
             return False
         
         payload = {
@@ -98,7 +99,7 @@ class N8NService:
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
-                    self.webhook_url,
+                    self.webhook_url_48h,
                     json=payload,
                     headers={"Content-Type": "application/json"}
                 )
