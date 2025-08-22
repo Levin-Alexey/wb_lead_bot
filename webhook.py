@@ -278,7 +278,11 @@ async def n8n_notification_webhook(request: Request):
             log.info(f"Sent 48h notification to user {telegram_id}")
             
     except Exception as e:
-        log.exception(f"Failed to send notification to user {telegram_id}: {e}")
-        raise HTTPException(status_code=500, detail="telegram_send_error")
+        if "blocked by the user" in str(e):
+            log.warning(f"User {telegram_id} blocked the bot, skipping notification")
+            return {"status": "skipped", "reason": "user_blocked_bot"}
+        else:
+            log.exception(f"Failed to send notification to user {telegram_id}: {e}")
+            raise HTTPException(status_code=500, detail="telegram_send_error")
 
     return {"status": "ok", "notification_type": notification_type}
