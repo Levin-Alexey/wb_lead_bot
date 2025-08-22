@@ -199,13 +199,16 @@ async def n8n_notification_webhook(request: Request):
 
     # Отправляем соответствующее уведомление
     try:
+        log.info(f"Starting to send {notification_type} notification to {telegram_id}")
+        
         if notification_type == "24h":
             # 24-часовое уведомление
             text = get_24h_notification_text()
             keyboard = get_24h_notification_keyboard()
-            photo_path = Path(__file__).parent / get_24h_notification_photo_path()
+            photo_path = Path(__file__).parent / "content" / "p24.jpg"
             
             # Отправляем фото с текстом и кнопкой
+            log.info(f"Photo path for 24h: {photo_path}, exists: {photo_path.exists()}")
             try:
                 if photo_path.exists():
                     async with aiofiles.open(photo_path, 'rb') as photo:
@@ -240,9 +243,10 @@ async def n8n_notification_webhook(request: Request):
             # 48-часовое уведомление
             text = get_48h_notification_text()
             keyboard = get_48h_notification_keyboard()
-            photo_path = Path(__file__).parent / get_48h_notification_photo_path()
+            photo_path = Path(__file__).parent / "content" / "p48.jpg"
             
             # Отправляем фото с текстом и кнопкой
+            log.info(f"Photo path for 48h: {photo_path}, exists: {photo_path.exists()}")
             try:
                 if photo_path.exists():
                     async with aiofiles.open(photo_path, 'rb') as photo:
