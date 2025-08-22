@@ -27,6 +27,8 @@ class User(Base):
     username: Mapped[str | None] = mapped_column(Text)
     first_name: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), default=datetime.utcnow)
+    notification_24h_sent: Mapped[bool] = mapped_column(default=False)
+    notification_48h_sent: Mapped[bool] = mapped_column(default=False)
 
     payments: Mapped[list["Payment"]] = relationship(back_populates="user")
     subscriptions: Mapped[list["Subscription"]] = relationship(back_populates="user")

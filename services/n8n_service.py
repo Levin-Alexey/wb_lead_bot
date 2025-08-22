@@ -12,6 +12,8 @@ class N8NService:
     def __init__(self):
         self.webhook_url_24h = os.getenv("N8N_WEBHOOK_URL_24H")
         self.webhook_url_48h = os.getenv("N8N_WEBHOOK_URL_48H")
+        self.webhook_url_24h_user = os.getenv("N8N_WEBHOOK_URL_24H_USER")
+        self.webhook_url_48h_user = os.getenv("N8N_WEBHOOK_URL_48H_USER")
         self.timeout = 10.0
     
     async def send_payment_created_notification(
@@ -116,6 +118,78 @@ class N8NService:
             return False
         except Exception as e:
             logger.error(f"Ошибка отправки 48ч уведомления в N8N: {e}")
+            return False
+
+    async def send_24h_notification(self, notification_data: Dict[str, Any]) -> bool:
+        """
+        Отправляет 24-часовое уведомление пользователю через N8N
+        """
+        if not self.webhook_url_24h_user:
+            logger.warning("N8N_WEBHOOK_URL_24H_USER не настроен")
+            return False
+        
+        payload = {
+            "event_type": "user_24h_notification",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            **notification_data
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    self.webhook_url_24h_user,
+                    json=payload,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    logger.info(f"Успешно отправлено 24ч уведомление пользователю {notification_data['telegram_id']}")
+                    return True
+                else:
+                    logger.error(f"Ошибка отправки 24ч уведомления пользователю: {response.status_code} - {response.text}")
+                    return False
+                    
+        except httpx.TimeoutException:
+            logger.error(f"Timeout при отправке 24ч уведомления пользователю {notification_data['telegram_id']}")
+            return False
+        except Exception as e:
+            logger.error(f"Ошибка отправки 24ч уведомления пользователю: {e}")
+            return False
+
+    async def send_48h_notification(self, notification_data: Dict[str, Any]) -> bool:
+        """
+        Отправляет 48-часовое уведомление пользователю через N8N
+        """
+        if not self.webhook_url_48h_user:
+            logger.warning("N8N_WEBHOOK_URL_48H_USER не настроен")
+            return False
+        
+        payload = {
+            "event_type": "user_48h_notification",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            **notification_data
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.post(
+                    self.webhook_url_48h_user,
+                    json=payload,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    logger.info(f"Успешно отправлено 48ч уведомление пользователю {notification_data['telegram_id']}")
+                    return True
+                else:
+                    logger.error(f"Ошибка отправки 48ч уведомления пользователю: {response.status_code} - {response.text}")
+                    return False
+                    
+        except httpx.TimeoutException:
+            logger.error(f"Timeout при отправке 48ч уведомления пользователю {notification_data['telegram_id']}")
+            return False
+        except Exception as e:
+            logger.error(f"Ошибка отправки 48ч уведомления пользователю: {e}")
             return False
 
 # Глобальный экземпляр сервиса
