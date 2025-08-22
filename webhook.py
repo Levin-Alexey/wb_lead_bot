@@ -23,8 +23,10 @@ from models import Payment as PaymentDB, PaymentStatus  # только для т
 from services.notification_service import (
     get_24h_notification_text,
     get_24h_notification_keyboard,
+    get_24h_notification_photo_path,
     get_48h_notification_text,
-    get_48h_notification_keyboard
+    get_48h_notification_keyboard,
+    get_48h_notification_photo_path
 )
 
 # ------------------ Config & logging ------------------
@@ -178,70 +180,101 @@ async def n8n_notification_webhook(request: Request):
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
     # Получаем данные из N8N
-    delay_hours = data.get("delay_hours")
-    payment_id = data.get("payment_id")
-    chat_id = data.get("chat_id")
     user_id = data.get("user_id")
+    telegram_id = data.get("telegram_id")
+    notification_type = data.get("notification_type")  # "24h" или "48h"
 
     log.info(
-        f"[N8N] notification delay_hours={delay_hours} payment_id={payment_id} "
-        f"chat_id={chat_id} user_id={user_id}"
+        f"[N8N] notification user_id={user_id} telegram_id={telegram_id} "
+        f"notification_type={notification_type}"
     )
 
-    if not all([delay_hours, payment_id, chat_id]):
+    if not all([user_id, telegram_id, notification_type]):
         log.error("Missing required fields in N8N notification")
         raise HTTPException(status_code=400, detail="Missing required fields")
 
-    # Проверяем статус платежа перед отправкой уведомления
-    async with get_session() as session:
-        try:
-            payment = await session.get(PaymentDB, payment_id)
-            
-            # Если платеж не найден или уже оплачен, не отправляем уведомление
-            if not payment or payment.status == PaymentStatus.succeeded:
-                log.info(f"Payment {payment_id} not found or already paid, skipping notification")
-                return {"status": "skipped", "reason": "payment_not_found_or_paid"}
-                
-        except Exception as e:
-            log.error(f"Error checking payment status: {e}")
-            raise HTTPException(status_code=500, detail="database_error")
+    if notification_type not in ["24h", "48h"]:
+        log.error(f"Invalid notification_type: {notification_type}")
+        raise HTTPException(status_code=400, detail="Invalid notification_type")
 
     # Отправляем соответствующее уведомление
     try:
-        if delay_hours == 24:
+        if notification_type == "24h":
             # 24-часовое уведомление
             text = get_24h_notification_text()
             keyboard = get_24h_notification_keyboard()
+            photo_path = Path(__file__).parent / get_24h_notification_photo_path()
             
-            await bot.send_message(
-                chat_id=int(chat_id),
-                text=text,
-                parse_mode=ParseMode.HTML,
-                reply_markup=keyboard
-            )
+            # Отправляем фото с текстом и кнопкой
+            try:
+                if photo_path.exists():
+                    async with aiofiles.open(photo_path, 'rb') as photo:
+                        photo_data = await photo.read()
+                        await bot.send_photo(
+                            chat_id=int(telegram_id),
+                            photo=photo_data,
+                            caption=text,
+                            parse_mode=ParseMode.HTML,
+                            reply_markup=keyboard
+                        )
+                else:
+                    log.warning(f"Photo not found: {photo_path}, sending text only")
+                    await bot.send_message(
+                        chat_id=int(telegram_id),
+                        text=text,
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=keyboard
+                    )
+            except Exception as e:
+                log.error(f"Error sending photo, fallback to text: {e}")
+                await bot.send_message(
+                    chat_id=int(telegram_id),
+                    text=text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard
+                )
             
-            log.info(f"Sent 24h notification to user {chat_id}")
+            log.info(f"Sent 24h notification to user {telegram_id}")
             
-        elif delay_hours == 48:
+        elif notification_type == "48h":
             # 48-часовое уведомление
             text = get_48h_notification_text()
             keyboard = get_48h_notification_keyboard()
+            photo_path = Path(__file__).parent / get_48h_notification_photo_path()
             
-            await bot.send_message(
-                chat_id=int(chat_id),
-                text=text,
-                parse_mode=ParseMode.HTML,
-                reply_markup=keyboard
-            )
+            # Отправляем фото с текстом и кнопкой
+            try:
+                if photo_path.exists():
+                    async with aiofiles.open(photo_path, 'rb') as photo:
+                        photo_data = await photo.read()
+                        await bot.send_photo(
+                            chat_id=int(telegram_id),
+                            photo=photo_data,
+                            caption=text,
+                            parse_mode=ParseMode.HTML,
+                            reply_markup=keyboard
+                        )
+                else:
+                    log.warning(f"Photo not found: {photo_path}, sending text only")
+                    await bot.send_message(
+                        chat_id=int(telegram_id),
+                        text=text,
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=keyboard
+                    )
+            except Exception as e:
+                log.error(f"Error sending photo, fallback to text: {e}")
+                await bot.send_message(
+                    chat_id=int(telegram_id),
+                    text=text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard
+                )
             
-            log.info(f"Sent 48h notification to user {chat_id}")
-            
-        else:
-            log.warning(f"Unknown delay_hours value: {delay_hours}")
-            return {"status": "error", "reason": "unknown_delay_hours"}
+            log.info(f"Sent 48h notification to user {telegram_id}")
             
     except Exception as e:
-        log.exception(f"Failed to send notification to user {chat_id}: {e}")
+        log.exception(f"Failed to send notification to user {telegram_id}: {e}")
         raise HTTPException(status_code=500, detail="telegram_send_error")
 
-    return {"status": "ok", "notification_type": f"{delay_hours}h"}
+    return {"status": "ok", "notification_type": notification_type}

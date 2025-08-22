@@ -31,6 +31,12 @@ def get_24h_notification_text() -> str:
     
     return format_notification_text_html(text)
 
+def get_24h_notification_photo_path() -> str:
+    """
+    Возвращает путь к картинке для 24-часового уведомления
+    """
+    return "content/p24.jpg"
+
 def get_24h_notification_keyboard() -> InlineKeyboardMarkup:
     """
     Возвращает клавиатуру для уведомления через 24 часа
@@ -55,6 +61,12 @@ def get_48h_notification_text() -> str:
  Жми на кнопку и заходи — мы тебя ждём👇"""
     
     return format_notification_text_html(text)
+
+def get_48h_notification_photo_path() -> str:
+    """
+    Возвращает путь к картинке для 48-часового уведомления
+    """
+    return "content/p48.jpg"
 
 def get_48h_notification_keyboard() -> InlineKeyboardMarkup:
     """
